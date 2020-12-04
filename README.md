@@ -80,6 +80,7 @@ SUM_OF_SQUARES = r'sum_of_squares'
 VARIANCE = r'variance' 
 PERCENTILE = r'percentile'
 COMMENT = r'comment'
+MODELS = r'models'
 ```
 
 ### Grammar
@@ -92,7 +93,7 @@ The rules tend to be in top-down order, but are not strictly so.
 #### Start symbol
 
 ```
-cell_methods : simple_statistics | climatological_statistics
+cell_methods : simple_cell_methods | climatological_cell_methods
 ```
 
 #### Simple statistics
@@ -102,12 +103,12 @@ Reference:
 para. 1.
 
 ```
-simple_statistics: 
-    simple_statistics simple_statistics_item 
-    | simple_statistics_item
+simple_cell_methods: 
+    simple_cell_methods simple_cell_methods_item 
+    | simple_cell_methods_item
 ```
 ```
-simple_statistics_item : NAME COLON method opt_cell_portions opt_extra_info
+simple_cell_methods_item : NAME COLON method opt_cell_portions opt_extra_info
 ```
 
 #### Climatological statistics
@@ -116,7 +117,8 @@ Reference:
 [7.4. Climatological Statistics](http://cfconventions.org/Data/cf-conventions/cf-conventions-1.8/cf-conventions.html#climatological-statistics)
 
 ```
-climatological_statistics : climo_stats_methods opt_extra_info
+climatological_cell_methods : 
+    climo_stats_methods opt_climo_stats_models_method
 ```
 ```
 climo_stats_methods : climo_stats_yy | climo_stats_dd | climo_stats_ddy
@@ -136,6 +138,16 @@ climatological_stats_ddy :
     TIME COLON method WITHIN DAYS opt_non_standardized_extra_info
     TIME COLON method OVER DAYS opt_non_standardized_extra_info
     TIME COLON method OVER YEARS opt_non_standardized_extra_info
+```
+
+We extend the CF Conventions here by allowing an optional statistic-over-models
+method as well at the end of any climatological statistics.
+
+```
+opt_climo_stats_models_method = climo_stats_models_method | empty
+```
+```
+climo_stats_models_method = MODELS COLON method opt_non_standardized_extra_info
 ```
 
 #### Atomic methods
