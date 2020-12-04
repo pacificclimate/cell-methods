@@ -8,6 +8,64 @@ Also will likely include a generator that translates this package's
 representation of `cell_methods` content into a valid `cell_methods` string.
 Hence we don't call the package `cf-cell-methods-parser`.
 
+## Implementation planning
+
+### Purpose of parser
+
+The purpose of this parser is to enable us to convert an arbitrary
+`cell_methods` into an easily processed, structured representation.
+(Conversely, such a representation would be easy to convert back into
+a correct `cell_methods` string.)
+
+What does "structured represenation" mean?
+
+- It means a Python data structure, not a plain string, whose
+   structure and content is suitable for processing it programatically,
+   a.k.a. "easily processed."
+
+What does "easily processed" mean?
+
+1. As simple as possible while still explicitly representing the full 
+   meaning of the string.
+1. Suited to our purposes, which are to query the value for meaning.
+   (This statement needs considerable refinement!)   
+1. Therefore an AST directly reflecting the grammar is unlikely to be 
+   either simple or suitable.
+   
+Let's take a shot at some kind of data structure. 
+We'll try to keep the grammar symbol names and the class names consistent.
+
+```
+class CellMethods:
+    pass
+
+class SimpleCellMethods(CellMethods):
+    methods : list(SimpleCellMethod)
+
+class SimpleCellMethod:
+    name: string
+    method: string
+    where: string (type) | None
+    over: string (type) | None
+    standardized_extra_info: StandardizedExtraInfo | None
+    non_standardized_extra_info: string | None
+
+class StandardizedExtraInfo
+    type : 'interval' # only valid value at present
+    value: string
+    unit: string
+
+class ClimatologicalCellMethods(CellMethods):
+    methods: list(ClimatologicalCellMethod)
+
+class ClimatologicalCellMethod:
+    # This is a subset of SimpleCellMethod, and constrained by
+    name: string
+    method: string
+    over: string (type)
+    non_standardized_extra_info: string | None
+```
+
 ## Notes
 
 ### Why SLY?
@@ -93,61 +151,17 @@ The rules tend to be in top-down order, but are not strictly so.
 #### Start symbol
 
 ```
-cell_methods : simple_cell_methods | climatological_cell_methods
+cell_methods : cell_methods cell_method | cell_method
 ```
 
-#### Simple statistics
+#### Cell method
 
 Reference: 
 [7.3. Cell Methods](http://cfconventions.org/Data/cf-conventions/cf-conventions-1.8/cf-conventions.html#cell-methods),
 para. 1.
 
 ```
-simple_cell_methods: 
-    simple_cell_methods simple_cell_methods_item 
-    | simple_cell_methods_item
-```
-```
-simple_cell_methods_item : NAME COLON method opt_cell_portions opt_extra_info
-```
-
-#### Climatological statistics
-
-Reference: 
-[7.4. Climatological Statistics](http://cfconventions.org/Data/cf-conventions/cf-conventions-1.8/cf-conventions.html#climatological-statistics)
-
-```
-climatological_cell_methods : 
-    climo_stats_methods opt_climo_stats_models_method
-```
-```
-climo_stats_methods : climo_stats_yy | climo_stats_dd | climo_stats_ddy
-```
-```
-climatological_stats_yy : 
-    TIME COLON method WITHIN YEARS opt_non_standardized_extra_info
-    TIME COLON method OVER YEARS opt_non_standardized_extra_info
-```
-```
-climatological_stats_dd : 
-    TIME COLON method WITHIN DAYS opt_non_standardized_extra_info
-    TIME COLON method OVER DAYS opt_non_standardized_extra_info
-```
-```
-climatological_stats_ddy : 
-    TIME COLON method WITHIN DAYS opt_non_standardized_extra_info
-    TIME COLON method OVER DAYS opt_non_standardized_extra_info
-    TIME COLON method OVER YEARS opt_non_standardized_extra_info
-```
-
-We extend the CF Conventions here by allowing an optional statistic-over-models
-method as well at the end of any climatological statistics.
-
-```
-opt_climo_stats_models_method = climo_stats_models_method | empty
-```
-```
-climo_stats_models_method = MODELS COLON method opt_non_standardized_extra_info
+cell_method : NAME COLON method opt_where_clause opt_over_clause opt_extra_info
 ```
 
 #### Atomic methods
@@ -158,7 +172,7 @@ All methods except `percentile` are prescribed by
 [CF Conventions, Appendix E: Cell Methods](http://cfconventions.org/Data/cf-conventions/cf-conventions-1.8/cf-conventions.html#appendix-cell-methods).
 
 ```
-atomic_method : POINT | SUM | MAXIMUM | MAXIMUM_ABSOLUTE_VALUE
+method : POINT | SUM | MAXIMUM | MAXIMUM_ABSOLUTE_VALUE
     | MEDIAN | MID_RANGE | MINIMUM | MINIMUM_ABSOLUTE_VALUE | MEAN 
     | MEAN_ABSOLUTE_VALUE | MEAN_OF_UPPER_DECILE | MODE | RANGE 
     | ROOT_MEAN_SQUARE | STANDARD_DEVIATION | SUM_OF_SQUARES | VARIANCE 
@@ -174,17 +188,15 @@ percentile : PERCENTILE LPAREN NUM RPAREN
 Reference:
 [7.3.3. Statistics applying to portions of cells](http://cfconventions.org/Data/cf-conventions/cf-conventions-1.8/cf-conventions.html#statistics-applying-portions).
 
+See also 
+[Climatological statistics cell methods](#climatological-statistics-cell-methods)
+for usage of the `over` clause.
+
 ```
-opt_cell_portions : cell_portions | empty
-```
-```
-cell_portions : cell_portions_where opt_cell_portions_over
-```
-```
-cell_portions_where : WHERE type 
+opt_where_clause : WHERE type | empty
 ```
 ```
-opt_cell_portions_over : OVER type | empty
+opt_over_clause : OVER type | empty
 ```
 ```
 type : NAME
@@ -235,4 +247,37 @@ combined_extra_info_content :
 ```
 empty :
 ```
+
+#### Climatological statistics cell methods
+
+Reference: 
+[7.4. Climatological Statistics](http://cfconventions.org/Data/cf-conventions/cf-conventions-1.8/cf-conventions.html#climatological-statistics)
+
+Strictly speaking, cell methods for climatological statistics are syntactically
+distinguishable from other ("simple") cell methods. The distinction lies in 
+the use of the `over` keyword. In simple cell methods, an `over` subexpression
+must be preceded by a `where` subexpression. In climatological cell methods,
+only the `over` subexpression can appear. 
+Furthermore, the acceptable values in the `over` subexpression are in distinct
+classes for each (much limited in the climatological case). 
+However, I think that one could construct a case where a simple cell method 
+`over` values looked like climatological cell method `over` values, 
+specifically by using the terms `years` and `days` very idiosyncratically.
+It may be possible however that there are in fact two separate vocabularies
+for each case (simple: spatial; climatological: temporal).
+
+*However*, as the above discussion shows, this syntactic distinction is quite
+subtle. In this grammar we elide the syntactic distinction, using a considerably
+simpler grammar, and instead treat the distinction as a semantic one. 
+The semantic distinction, in the simpler grammar, is on the presence of 
+a `where` subexpression and the value in the `over` subexpression.
+
+This semantic distinctin is far easier to implement and gives us just the right 
+amount of flexibility for considered extensions to the CF Conventions.
+
+##### Extensions
+
+We extend the CF Conventions by allowing an optional statistic-over-models
+method as well at the end of climatological statistics.
+Again, this is a semantic not a syntactic constraint.
 
