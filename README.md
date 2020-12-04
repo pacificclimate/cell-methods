@@ -87,13 +87,60 @@ COMMENT = r'comment'
 The grammar for `cell_methods` is presented here in the standard `yacc` form,
 which is directly usable in constructing a SLY Parser.
 
+The rules tend to be in top-down order, but are not strictly so.
+
 #### Start symbol
 
 ```
 cell_methods : simple_statistics | climatological_statistics
 ```
 
-#### Method
+#### Simple statistics
+
+Reference: 
+[7.3. Cell Methods](http://cfconventions.org/Data/cf-conventions/cf-conventions-1.8/cf-conventions.html#cell-methods),
+para. 1.
+
+```
+simple_statistics: 
+    simple_statistics simple_statistics_item 
+    | simple_statistics_item
+```
+```
+simple_statistics_item : NAME COLON method opt_cell_portions opt_extra_info
+```
+
+#### Climatological statistics
+
+Reference: 
+[7.4. Climatological Statistics](http://cfconventions.org/Data/cf-conventions/cf-conventions-1.8/cf-conventions.html#climatological-statistics)
+
+```
+climatological_statistics : climo_stats_methods opt_extra_info
+```
+```
+climo_stats_methods : climo_stats_yy | climo_stats_dd | climo_stats_ddy
+```
+```
+climatological_stats_yy : 
+    TIME COLON method WITHIN YEARS opt_non_standardized_extra_info
+    TIME COLON method OVER YEARS opt_non_standardized_extra_info
+```
+```
+climatological_stats_dd : 
+    TIME COLON method WITHIN DAYS opt_non_standardized_extra_info
+    TIME COLON method OVER DAYS opt_non_standardized_extra_info
+```
+```
+climatological_stats_ddy : 
+    TIME COLON method WITHIN DAYS opt_non_standardized_extra_info
+    TIME COLON method OVER DAYS opt_non_standardized_extra_info
+    TIME COLON method OVER YEARS opt_non_standardized_extra_info
+```
+
+#### Atomic methods
+
+These are the core statistical operations performed on data.
 
 All methods except `percentile` are prescribed by 
 [CF Conventions, Appendix E: Cell Methods](http://cfconventions.org/Data/cf-conventions/cf-conventions-1.8/cf-conventions.html#appendix-cell-methods).
@@ -108,10 +155,6 @@ atomic_method : POINT | SUM | MAXIMUM | MAXIMUM_ABSOLUTE_VALUE
 
 ```
 percentile : PERCENTILE LPAREN NUM RPAREN
-```
-
-```
-method : atomic_method opt_cell_portions opt_extra_info
 ```
 
 #### Statistics applying to portions of cells (`where`, `over`)
@@ -143,65 +186,36 @@ Reference:
 ```
 opt_extra_info = extra_info | empty
 ```
-
 ```
 extra_info : LPAREN extra_info_content RPAREN
 ```
+
+```
+opt_non_standardized_extra_info = non_standardized_extra_info | empty
+```
+```
+non_standardized_extra_info : LPAREN non_standardized_extra_info_content RPAREN
+```
+
 ```
 extra_info_content : 
-    standardized_extra_info 
-    | non_standardized_extra_info
-    | combined_standardized_extra_info
+    standardized_extra_info_content 
+    | non_standardized_extra_info_content
+    | combined_extra_info_content
 ```
 ```
-standardized_extra_info : INTERVAL COLON value unit
-```
-```
-non_standardized_extra_info : <any string>
-```
-```
-combined_standardized_extra_info : 
-    standardized_extra_info COMMENT COLON non_standardized_extra_info
+standardized_extra_info_content : INTERVAL COLON value unit
 ```
 
-#### Simple statistics
-
-Reference: 
-[7.3. Cell Methods](http://cfconventions.org/Data/cf-conventions/cf-conventions-1.8/cf-conventions.html#cell-methods),
-para. 1.
-
+Definition of `non_standardized_extra_info_content` needs some refinement.
 ```
-simple_statistics: 
-    simple_statistics simple_statistics_item 
-    | simple_statistics_item
-```
-```
-simple_statistics_item : NAME COLON method
+non_standardized_extra_info_content : <any string>
 ```
 
-#### Climatological statistics
-
-Reference: 
-[7.4. Climatological Statistics](http://cfconventions.org/Data/cf-conventions/cf-conventions-1.8/cf-conventions.html#climatological-statistics)
-
 ```
-climatological_statistics : climo_stats_methods opt_extra_info
-```
-```
-climo_stats_methods : climo_stats_yy | climo_stats_dd | climo_stats_ddy
-```
-```
-climatological_stats_yy : 
-    TIME COLON method WITHIN YEARS TIME COLON method OVER YEARS
-```
-```
-climatological_stats_dd : 
-    TIME COLON method WITHIN DAYS TIME COLON method OVER DAYS
-```
-```
-climatological_stats_ddy : 
-    TIME COLON method WITHIN DAYS TIME COLON method OVER DAYS 
-    TIME COLON method OVER YEARS
+combined_extra_info_content : 
+    standardized_extra_info_content 
+    COMMENT COLON non_standardized_extra_info_content
 ```
 
 #### Helper symbols
