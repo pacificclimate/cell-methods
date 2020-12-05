@@ -28,21 +28,20 @@ What does "easily processed" mean?
 1. As simple as possible while still explicitly representing the full 
    meaning of the string.
 1. Suited to our purposes, which are to query the value for meaning.
-   (This statement needs considerable refinement!)   
+   (This statement hides a lot of details!)   
 1. Therefore an AST directly reflecting the grammar is unlikely to be 
    either simple or suitable.
    
 Let's take a shot at some kind of data structure. 
 We'll try to keep the grammar symbol names and the class names consistent.
+(This is a sort of UML-ish, sort of Python-ish representation of the data
+structure.)
 
 ```
 class CellMethods:
-    pass
+    methods : list(CellMethod)
 
-class SimpleCellMethods(CellMethods):
-    methods : list(SimpleCellMethod)
-
-class SimpleCellMethod:
+class CellMethod:
     name: string
     method: string
     where: string (type) | None
@@ -54,16 +53,6 @@ class StandardizedExtraInfo
     type : 'interval' # only valid value at present
     value: string
     unit: string
-
-class ClimatologicalCellMethods(CellMethods):
-    methods: list(ClimatologicalCellMethod)
-
-class ClimatologicalCellMethod:
-    # This is a subset of SimpleCellMethod, and constrained by
-    name: string
-    method: string
-    over: string (type)
-    non_standardized_extra_info: string | None
 ```
 
 ## Notes
