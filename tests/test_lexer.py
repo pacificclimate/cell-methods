@@ -5,7 +5,7 @@ from cf_cell_methods.lexer import lexer
     "data, expected",
     (
         (
-            "foo: bar 123 456.789 point sum",
+            'foo: bar 123 456.789 point sum " an example string"',
             [
                 ("NAME", "foo"),
                 ("COLON", ":"),
@@ -14,6 +14,7 @@ from cf_cell_methods.lexer import lexer
                 ("NUM", 456.789),
                 ("POINT", "point"),
                 ("SUM", "sum"),
+                ("STRING", " an example string"),
             ]
         ),
     ),

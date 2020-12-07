@@ -2,12 +2,18 @@ from sly import Lexer
 
 
 class CfcmLexer(Lexer):
-    tokens = { 
+    tokens = {
+        # Punctuation
         COLON, 
         LPAREN, 
-        RPAREN, 
+        RPAREN,
+
+        # Values
         NUM, 
         NAME,
+        STRING,
+
+        # Keywords
         POINT,
         SUM,
         MAXIMUM,
@@ -30,6 +36,7 @@ class CfcmLexer(Lexer):
         MODELS,
         WHERE,
         OVER,
+        INTERVAL,
     }
     ignore = ' \t'
 
@@ -44,6 +51,11 @@ class CfcmLexer(Lexer):
     NUM = r'\d+(\.\d+)?'
     def NUM(self, t):
         t.value = float(t.value)
+        return t
+
+    STRING = r'"[^"]*"'
+    def STRING(self, t):
+        t.value = t.value[1:-1]
         return t
 
     # Keywords (NAME special cases)
@@ -69,6 +81,7 @@ class CfcmLexer(Lexer):
     NAME['models'] = MODELS
     NAME['where'] = WHERE
     NAME['over'] = OVER
+    NAME['interval'] = INTERVAL
 
     def error(self, t):
         print(f"Unexpected character '{t.value[0]}' at column {self.index}")
