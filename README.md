@@ -4,20 +4,40 @@ A [SLY](https://github.com/dabeaz/sly) parser for the content of the
 [`cell_methods`](http://cfconventions.org/Data/cf-conventions/cf-conventions-1.8/cf-conventions.html#cell-methods) 
 attribute defined in CF Metadata Conventions.
 
-Also will likely include a generator that translates this package's 
-representation of `cell_methods` content into a valid `cell_methods` string.
-Hence we don't call the package `cf-cell-methods-parser`.
+The parser converts a `cell_methods` string into a Python representation of
+the content (or throws a parsing error).
 
-## Implementation planning
+The parsed representation of a `cell_methods` string includes the ability
+to convert it into a valid `cell_methods` string.
 
-### Purpose of parser
+## Installation
 
-The purpose of this parser is to enable us to convert an arbitrary
+```
+pip install cf-cell-methods
+```
+
+## Usage
+
+```
+from cf_cell_methods.lexer import lexer
+from cf_cell_methods.parser import lexer
+
+...
+
+rep = parser.parse(lexer.tokenize(cell_methods_string))
+```
+
+The usage above could be packaged up into a single method.
+
+
+## Purpose and realization
+
+The purpose of this package is to enable us to convert an arbitrary
 `cell_methods` into an easily processed, structured representation.
 (Conversely, such a representation would be easy to convert back into
 a correct `cell_methods` string.)
 
-What does "structured represenation" mean?
+What does "structured representation" mean?
 
 - It means a Python data structure, not a plain string, whose
    structure and content is suitable for processing it programatically,
@@ -32,32 +52,25 @@ What does "easily processed" mean?
 1. Therefore an AST directly reflecting the grammar is unlikely to be 
    either simple or suitable.
    
-Let's take a shot at some kind of data structure. 
-We'll try to keep the grammar symbol names and the class names consistent.
-(This is a sort of UML-ish, sort of Python-ish representation of the data
-structure.)
+If we consider the form of a `cell_methods` string, we see a sequence of
+individual cell methods. Each individual cell method contains some mandatory
+and some optional information. Some of these values are themselves complex.
+(For example, in our extension statistical methods to encompass percentiles,
+we need methods with parametrizations so that we can express which percentile
+it is.)
 
-```
-class CellMethods:
-    methods : list(CellMethod)
+This suggests a relatively simple representation: A sequence (list or tuple)
+of `CellMethod` objects, with appropriate subsidiary objects as needed to 
+represent those of its attributes with compound values (e.g., `Method`.) See
+module [representation](cf_cell_methods/representation.py).
 
-class CellMethod:
-    name: string
-    method: string
-    where: string (type) | None
-    over: string (type) | None
-    standardized_extra_info: StandardizedExtraInfo | None
-    non_standardized_extra_info: string | None
+## Implementation planning
 
-class StandardizedExtraInfo
-    type : 'interval' # only valid value at present
-    value: string
-    unit: string
-```
+### Parsing tool
 
-## Notes
+We've chosen SLY to implement the parser.
 
-### Why SLY?
+#### Why SLY?
 
 SLY is a Python implementation of the lex and yacc tools commonly used to 
 write parsers and compilers. SLY is an updated version of PLY, whose
@@ -83,64 +96,27 @@ This section presents the information needed to construct a parser for
 
 ### Tokens
 
-These define the lexical tokens of the `cell_methods` language as
-regular expressions coded in Python. These can be incorporated directly into
-a SLY Lexer.
+These define the lexical tokens of the `cell_methods` language.
+Their definition in the [lexer](cf_cell_methods/lexer.py) is clear.
 
-#### Basic tokens
-
-```
-COLON = r':'
-LPAREN = r'\('
-RPAREN = r'\)'
-NUM = r'[0-9]+(.[0-9]+)'
-NAME = r'[a-zA-Z_][a-zA-Z0-9_]*'
-```
-
-#### Keyword tokens
-
-These are the for the most part the keywords that can appear in the
-`method` part of a `cell_method`. For reference see 
-[CF Conventions, Appendix E: Cell Methods](http://cfconventions.org/Data/cf-conventions/cf-conventions-1.8/cf-conventions.html#appendix-cell-methods).
-We've extended the CF Conventions list with the following custom items:
-
-- `percentile`, which is the name of a parametrized method that yields
-   percentile values; e.g., `percentile(5)` for 5th percentile.
-
-```
-POINT = r'point'
-SUM = r'sum'
-MAXIMUM = r'maximum'
-MAXIMUM_ABSOLUTE_VALUE = r'maximum_absolute_value'
-MEDIAN = r'median'
-MID_RANGE = r'mid_range'
-MINIMUM = r'minimum'
-MINIMUM_ABSOLUTE_VALUE = r'minimum_absolute_value'
-MEAN = r'mean' 
-MEAN_ABSOLUTE_VALUE = r'mean_absolute_value'
-MEAN_OF_UPPER_DECILE = r'mean_of_upper_decile'
-MODE = r'mode'
-RANGE = r'range' 
-ROOT_MEAN_SQUARE = r'root_mean_square'
-STANDARD_DEVIATION = r'standard_deviation'
-SUM_OF_SQUARES = r'sum_of_squares'
-VARIANCE = r'variance' 
-PERCENTILE = r'percentile'
-COMMENT = r'comment'
-MODELS = r'models'
-```
+The only item that might be confusing is the treatment of the entire
+"extra information" content as single token, EXTRA_INFO, a string-like 
+token whose content is delimited by matching parentheses.
+See the note in the [parser](cf_cell_methods/parser.py) for why this is done.
+(I suspect I may be wrong that extra info cannot be treated as a CFL, but
+this solved the problem much faster.)
 
 ### Grammar
 
-The grammar for `cell_methods` is presented here in the standard `yacc` form,
-which is directly usable in constructing a SLY Parser.
+The grammar for `cell_methods` is presented here in Extended BNF. A little
+work expands it into the plain BNF accepted by SLY, yacc, etc.
 
 The rules tend to be in top-down order, but are not strictly so.
 
 #### Start symbol
 
 ```
-cell_methods : cell_methods cell_method | cell_method
+cell_methods : cell_method*
 ```
 
 #### Cell method
@@ -150,10 +126,10 @@ Reference:
 para. 1.
 
 ```
-cell_method : NAME COLON method opt_where_clause opt_over_clause opt_extra_info
+cell_method : NAME COLON method where_clause? over_clause? extra_info?
 ```
 
-#### Atomic methods
+#### Methods
 
 These are the core statistical operations performed on data.
 
@@ -161,15 +137,22 @@ All methods except `percentile` are prescribed by
 [CF Conventions, Appendix E: Cell Methods](http://cfconventions.org/Data/cf-conventions/cf-conventions-1.8/cf-conventions.html#appendix-cell-methods).
 
 ```
-method : POINT | SUM | MAXIMUM | MAXIMUM_ABSOLUTE_VALUE
-    | MEDIAN | MID_RANGE | MINIMUM | MINIMUM_ABSOLUTE_VALUE | MEAN 
-    | MEAN_ABSOLUTE_VALUE | MEAN_OF_UPPER_DECILE | MODE | RANGE 
-    | ROOT_MEAN_SQUARE | STANDARD_DEVIATION | SUM_OF_SQUARES | VARIANCE 
-    | percentile
+method : NAME params?
 ```
 
+Note parameter list is enclosed in square brackets to disambiguate it from
+the possible parenthesis-delimited extra info portion that could immediately 
+follow an unparametrized method. Since this is our own extension, we get to
+choose.
+
 ```
-percentile : PERCENTILE LPAREN NUM RPAREN
+params: LBRACKET param_list RBRACKET
+```
+```
+param_list: param_list COMMA param | param
+```
+```
+param : NUM
 ```
 
 #### Statistics applying to portions of cells (`where`, `over`)
@@ -182,13 +165,10 @@ See also
 for usage of the `over` clause.
 
 ```
-opt_where_clause : WHERE type | empty
+where_clause : WHERE NAME
 ```
 ```
-opt_over_clause : OVER type | empty
-```
-```
-type : NAME
+over_clause : OVER NAME
 ```
 
 #### Extra method information
@@ -197,39 +177,14 @@ Reference:
 [7.3.2. Recording the spacing of the original data and other information](http://cfconventions.org/Data/cf-conventions/cf-conventions-1.8/cf-conventions.html#recording-spacing-original-data).
 
 ```
-opt_extra_info = extra_info | empty
-```
-```
-extra_info : LPAREN extra_info_content RPAREN
+extra_info : EXTRA_INFO
 ```
 
-```
-opt_non_standardized_extra_info = non_standardized_extra_info | empty
-```
-```
-non_standardized_extra_info : LPAREN non_standardized_extra_info_content RPAREN
-```
+The content of the `EXTRA_INFO` token is parsed separately inside the
+`extra_info` method. This avoids the problem that the definition of
+extra information in the Conventions appears to make it not quite strictly
+a CFG.
 
-```
-extra_info_content : 
-    standardized_extra_info_content 
-    | non_standardized_extra_info_content
-    | combined_extra_info_content
-```
-```
-standardized_extra_info_content : INTERVAL COLON value unit
-```
-
-Definition of `non_standardized_extra_info_content` needs some refinement.
-```
-non_standardized_extra_info_content : <any string>
-```
-
-```
-combined_extra_info_content : 
-    standardized_extra_info_content 
-    COMMENT COLON non_standardized_extra_info_content
-```
 
 #### Helper symbols
 
@@ -237,7 +192,9 @@ combined_extra_info_content :
 empty :
 ```
 
-#### Climatological statistics cell methods
+## Semantics
+
+### Climatological statistics cell methods
 
 Reference: 
 [7.4. Climatological Statistics](http://cfconventions.org/Data/cf-conventions/cf-conventions-1.8/cf-conventions.html#climatological-statistics)
@@ -264,7 +221,9 @@ a `where` subexpression and the value in the `over` subexpression.
 This semantic distinctin is far easier to implement and gives us just the right 
 amount of flexibility for considered extensions to the CF Conventions.
 
-##### Extensions
+### Extensions
+
+#### Methods
 
 We extend the CF Conventions by allowing an optional statistic-over-models
 method as well at the end of climatological statistics.
