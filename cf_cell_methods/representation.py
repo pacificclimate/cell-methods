@@ -75,12 +75,18 @@ class SxiInterval(StandardizedExtraInfo):
         return f"interval: {self.value} {self.unit}"
 
 
-class Percentile:
-    def __init__(self, value):
-        self.value = value
+class Method:
+    def __init__(self, name, params):
+        self.name = name
+        self.params = params
 
     def __eq__(*args):
-        return eq(*args, "value")
+        return eq(*args, "name, params")
 
     def __str__(self):
-        return f"percentile({self.value})"
+        params = (
+            f"[{','.join(str(p) for p in self.params)}]"
+            if self.params is not None else ""
+        )
+        return f"{self.name}{params}"
+

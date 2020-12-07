@@ -4,7 +4,7 @@ from cf_cell_methods.representation import (
     CellMethod,
     ExtraInfo,
     SxiInterval,
-    Percentile,
+    Method,
 )
 
 
@@ -35,8 +35,8 @@ def test_eq(a, b, attrs, expected):
 @pytest.mark.parametrize(
     "a, b, equal",
     (
-        (Percentile(5), Percentile(5), True),
-        (Percentile(5), Percentile(9), False),
+        (Method("mean", None), Method("mean", None), True),
+        (Method("median", None), Method("mean", None), False),
         (SxiInterval("1", "year"), SxiInterval("1", "year"), True),
         (SxiInterval("2", "year"), SxiInterval("1", "year"), False),
         (SxiInterval("1", "day"), SxiInterval("1", "year"), False),
@@ -129,7 +129,9 @@ def test__eq__(a, b, equal):
 @pytest.mark.parametrize(
     "data, expected",
     (
-        (Percentile(5), "percentile(5)"),
+        (Method("mean", None), "mean"),
+        (Method("percentile", (5,)), "percentile[5]"),
+        (Method("gronk", (5,6)), "gronk[5,6]"),
         (SxiInterval("1", "year"), "interval: 1 year"),
         (ExtraInfo(None, None), ""),
         (ExtraInfo(SxiInterval("1", "year"), None), "(interval: 1 year)"),

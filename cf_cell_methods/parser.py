@@ -1,7 +1,7 @@
 from sly import Parser
 from cf_cell_methods.lexer import CfcmLexer
 from cf_cell_methods.representation import (
-    CellMethod, Percentile, ExtraInfo, SxiInterval,
+    CellMethod, Method, ExtraInfo, SxiInterval,
 )
 
 
@@ -10,10 +10,9 @@ class CfcmParser(Parser):
     tokens = CfcmLexer.tokens
 
     # Grammar rules and actions
-
-    #### Start symbol
-
     start = 'cell_methods'
+
+    # Start symbol
 
     @_("cell_methods cell_method")
     def cell_methods(self, p):
@@ -23,7 +22,7 @@ class CfcmParser(Parser):
     def cell_methods(self, p):
         return [p.cell_method]
 
-    #### Cell method
+    # Cell method
 
     @_("NAME COLON method opt_where_clause opt_over_clause opt_extra_info")
     def cell_method(self, p):
@@ -35,35 +34,37 @@ class CfcmParser(Parser):
             extra_info=p.opt_extra_info,
         )
 
-    #### Atomic methods
+    # Method (with optional params)
 
-    @_(
-        "POINT",
-        "SUM",
-        "MAXIMUM",
-        "MAXIMUM_ABSOLUTE_VALUE",
-        "MEDIAN",
-        "MID_RANGE",
-        "MINIMUM",
-        "MINIMUM_ABSOLUTE_VALUE",
-        "MEAN",
-        "MEAN_ABSOLUTE_VALUE",
-        "MEAN_OF_UPPER_DECILE",
-        "MODE",
-        "RANGE",
-        "ROOT_MEAN_SQUARE",
-        "STANDARD_DEVIATION",
-        "SUM_OF_SQUARES",
-        "VARIANCE",     
-    )
+    @_("NAME opt_params")
     def method(self, p):
-        return p[0]
+        return Method(p.NAME, p.opt_params)
 
-    @_("PERCENTILE LPAREN NUM RPAREN")
-    def method(self, p):
-        return Percentile(p.NUM)
+    @_("params")
+    def opt_params(self, p):
+        return p.params
 
-    #### Statistics applying to portions of cells (`where`, `over`)
+    @_("empty")
+    def opt_params(self, p):
+        return None
+
+    @_("LBRACKET param_list RBRACKET")
+    def params(self, p):
+        return p.param_list
+
+    @_("param_list COMMA param")
+    def param_list(self, p):
+        return p.param_list + (p.param,)
+
+    @_("param")
+    def param_list(self, p):
+        return (p.param,)
+
+    @_("NUM")
+    def param(self, p):
+        return p.NUM
+
+    # Statistics applying to portions of cells (`where`, `over`)
 
     @_("WHERE NAME")
     def opt_where_clause(self, p):
@@ -81,7 +82,7 @@ class CfcmParser(Parser):
     def opt_over_clause(self, p):
         return None
 
-    #### Extra method information
+    # Extra method information
 
     @_("extra_info")
     def opt_extra_info(self, p):
@@ -134,7 +135,7 @@ class CfcmParser(Parser):
     def unit(self, p):
         return p.NAME
 
-    #### Helper symbols
+    # Helper symbols
 
     @_("")
     def empty(self, p):

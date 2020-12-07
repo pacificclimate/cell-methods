@@ -12,8 +12,8 @@ from cf_cell_methods.lexer import lexer
                 ("NAME", "bar"),
                 ("NUM", 123),
                 ("NUM", 456.789),
-                ("POINT", "point"),
-                ("SUM", "sum"),
+                ("NAME", "point"),
+                ("NAME", "sum"),
                 ("STRING", " an example string"),
             ]
         ),
