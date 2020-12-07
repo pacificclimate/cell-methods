@@ -6,15 +6,13 @@ class CfcmLexer(Lexer):
         # Punctuation
         COMMA,
         COLON, 
-        LPAREN, 
-        RPAREN,
         LBRACKET,
         RBRACKET,
 
         # Values
         NUM, 
         NAME,
-        STRING,
+        EXTRA_INFO,
 
         # Keywords
         COMMENT,
@@ -26,14 +24,14 @@ class CfcmLexer(Lexer):
     ignore = ' \t'
 
     # Tokens
-    # TODO: Convert to literals declaration?
+
+    # Punctuation
     COMMA = r','
     COLON = r':'
-    LPAREN = r'\('
-    RPAREN = r'\)'
     LBRACKET = r'\['
     RBRACKET = r'\]'
 
+    # Values
     NAME = r'[a-zA-Z_][a-zA-Z0-9_]*'
 
     NUM = r'\d+(\.\d+)?'
@@ -41,8 +39,9 @@ class CfcmLexer(Lexer):
         t.value = float(t.value)
         return t
 
-    STRING = r'"[^"]*"'
-    def STRING(self, t):
+    # See comments to rule `extra_info`
+    EXTRA_INFO = r'\([^)]*\)'
+    def EXTRA_INFO(self, t):
         t.value = t.value[1:-1]
         return t
 

@@ -34,12 +34,12 @@ from cf_cell_methods.representation import (
                 CellMethod(
                     "time",
                     Method("mean", None),
-                    extra_info=ExtraInfo(SxiInterval(1, "day"), None)
+                    extra_info=ExtraInfo(SxiInterval(1.0, "day"), None)
                 )
             ]
         ),
         (
-            'time: mean ("frogs")',
+            'time: mean (frogs)',
             [
                 CellMethod(
                     "time",
@@ -49,12 +49,12 @@ from cf_cell_methods.representation import (
             ]
         ),
         (
-            'time: percentile[5] (interval: 1 day comment: "frogs")',
+            'time: percentile[5] (interval: 1 day comment: frogs)',
             [
                 CellMethod(
                     "time",
                     Method("percentile", (5,)),
-                    extra_info=ExtraInfo(SxiInterval(1, "day"), "frogs")
+                    extra_info=ExtraInfo(SxiInterval(1.0, "day"), "frogs")
                 )
             ]
         ),
@@ -70,6 +70,6 @@ from cf_cell_methods.representation import (
 )
 def test_parser(data, expected):
     result = parser.parse(lexer.tokenize(data))
-    for r, e in zip(result, expected):
-        print(f"{r} | {e}")
+    # for r, e in zip(result, expected):
+    #     print(f"{r} | {e}")
     assert result == expected

@@ -6,6 +6,7 @@ def eq(a, b, attrs):
     for attr in re.split(r"\s*,\s*", attrs):
         left, right = (getattr(obj, attr) for obj in (a, b))
         if left != right:
+            # print(f"eq False on attr '{attr}': {left!r} != {right!r}")
             return False
     return True
 

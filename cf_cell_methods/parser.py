@@ -1,3 +1,4 @@
+import re
 from sly import Parser
 from cf_cell_methods.lexer import CfcmLexer
 from cf_cell_methods.representation import (
@@ -92,48 +93,26 @@ class CfcmParser(Parser):
     def opt_extra_info(self, p):
         return None
 
-    @_("LPAREN extra_info_content RPAREN")
+    # This is our workaround for the fact that the cell_methods grammar is
+    # not quite context-free due to the format for "extra information." We treat
+    # extra information like a quoted string, but the "quotes" are matching
+    # parentheses. The string between the parentheses is then parsed separately.
+    @_("EXTRA_INFO")
     def extra_info(self, p):
-        return p.extra_info_content
-
-    @_("standardized_extra_info_content")
-    def extra_info_content(self, p):
-        return ExtraInfo(p.standardized_extra_info_content, None)
-
-    @_("non_standardized_extra_info_content")
-    def extra_info_content(self, p):
-        return ExtraInfo(None, p.non_standardized_extra_info_content)
-
-    @_("combined_extra_info_content")
-    def extra_info_content(self, p):
-        return p.combined_extra_info_content
-
-    @_("INTERVAL COLON value unit")
-    def standardized_extra_info_content(self, p):
-        return SxiInterval(p.value, p.unit)
-
-    @_("STRING")
-    def non_standardized_extra_info_content(self, p):
-        return p.STRING
-
-    @_(
-        # NB: concatenation, not alternation
-        "standardized_extra_info_content "
-        "COMMENT COLON non_standardized_extra_info_content"
-    )
-    def combined_extra_info_content(self, p):
-        return ExtraInfo(
-            p.standardized_extra_info_content,
-            p.non_standardized_extra_info_content
+        # TODO: It would be better to parse this little sub-language with a real
+        #   parser. regex FTW :-P
+        match = re.match(
+            r"(?P<interval>\s*interval:\s+(?P<value>\d+(\.\d+)?)\s+"
+            r"(?P<unit>\w+)(\s+comment: )?)?"
+            r"(?P<comment>.*)",
+            p.EXTRA_INFO
         )
-
-    @_("NUM")
-    def value(self, p):
-        return p.NUM
-
-    @_("NAME")
-    def unit(self, p):
-        return p.NAME
+        standardized = (
+            match.group('interval') and
+            SxiInterval(float(match.group('value')), match.group('unit'))
+        )
+        non_standardized = match.group('comment') or None
+        return ExtraInfo(standardized, non_standardized)
 
     # Helper symbols
 
