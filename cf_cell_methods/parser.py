@@ -17,14 +17,10 @@ class CfcmParser(Parser):
 
     @_("cell_methods cell_method")
     def cell_methods(self, p):
-        print(f"cell_methods: self: {self}")
-        print(f"cell_methods: p: {p}")
         return p.cell_methods + [p.cell_method]
 
     @_("cell_method")
     def cell_methods(self, p):
-        print(f"cell_methods: self: {self}")
-        print(f"cell_methods: p: {p}")
         return [p.cell_method]
 
     #### Cell method
@@ -138,13 +134,13 @@ class CfcmParser(Parser):
             p.non_standardized_extra_info_content
         )
 
-    @_("NAME")
+    @_("NUM")
     def value(self, p):
-        return p.name
+        return p.NUM
 
     @_("NAME")
     def unit(self, p):
-        return p.name
+        return p.NAME
 
     #### Helper symbols
 
