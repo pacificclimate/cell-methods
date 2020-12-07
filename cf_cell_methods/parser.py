@@ -65,7 +65,6 @@ class CfcmParser(Parser):
 
     #### Statistics applying to portions of cells (`where`, `over`)
 
-    # TODO: Could these ...
     @_("WHERE NAME")
     def opt_where_clause(self, p):
         return p.NAME
@@ -73,13 +72,6 @@ class CfcmParser(Parser):
     @_("empty")
     def opt_where_clause(self, p):
         return None
-
-    # TODO: ... be replaced by this? If so, way better.
-    # @_("WHERE NAME", "empty")
-    # def opt_where_clause(self, p):
-    #     if p[0] == "where":
-    #         return p.NAME
-    #     return None
 
     @_("OVER NAME")
     def opt_over_clause(self, p):
@@ -146,7 +138,6 @@ class CfcmParser(Parser):
 
     @_("")
     def empty(self, p):
-        print(f"empty: {p}")
         pass
 
 

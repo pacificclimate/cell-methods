@@ -66,6 +66,6 @@ from cf_cell_methods.representation import (
 )
 def test_parser(data, expected):
     result = parser.parse(lexer.tokenize(data))
-    for r, e in zip(result, expected):
-        print(f"{r} | {e}")
+    # for r, e in zip(result, expected):
+    #     print(f"{r} | {e}")
     assert result == expected
