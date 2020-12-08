@@ -2,6 +2,9 @@ from sly import Lexer
 
 
 class CfcmLexer(Lexer):
+    # This token list looks as if it ought to be treated as an error by Python.
+    # The author of SLY is pleased to do weird metaprogramming magic that makes
+    # it not so. This actually works, if by demonic means.
     tokens = {
         # Punctuation
         COMMA,
@@ -15,11 +18,9 @@ class CfcmLexer(Lexer):
         EXTRA_INFO,
 
         # Keywords
-        COMMENT,
-        MODELS,
         WHERE,
         OVER,
-        INTERVAL,
+        WITHIN,
     }
     ignore = ' \t'
 
@@ -46,11 +47,9 @@ class CfcmLexer(Lexer):
         return t
 
     # Keywords (NAME special cases)
-    NAME['comment'] = COMMENT
-    NAME['models'] = MODELS
     NAME['where'] = WHERE
     NAME['over'] = OVER
-    NAME['interval'] = INTERVAL
+    NAME['within'] = WITHIN
 
     def error(self, t):
         print(f"Unexpected character '{t.value[0]}' at column {self.index}")

@@ -29,6 +29,10 @@ from cf_cell_methods.representation import (
             [CellMethod("time", Method("mean", None), where="land", over="years")]
         ),
         (
+            'time: mean within days',
+            [CellMethod("time", Method("mean", None), within="days")]
+        ),
+        (
             'time: mean (interval: 1 day)',
             [
                 CellMethod(

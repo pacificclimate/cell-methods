@@ -4,11 +4,16 @@ A [SLY](https://github.com/dabeaz/sly) parser for the content of the
 [`cell_methods`](http://cfconventions.org/Data/cf-conventions/cf-conventions-1.8/cf-conventions.html#cell-methods) 
 attribute defined in CF Metadata Conventions.
 
-The parser converts a `cell_methods` string into a Python representation of
-the content (or throws a parsing error).
+## Purpose
 
-The parsed representation of a `cell_methods` string includes the ability
-to convert it into a valid `cell_methods` string.
+The purpose of this package is to enable us to convert an arbitrary
+`cell_methods` string into an easily processed, structured representation,
+and to provide additional tools for processing 
+(e.g., comparing representations).
+
+Conversely, a representation is easy to convert back into
+a correct `cell_methods` string because all representation classes
+have defined `__str__` appropriately.
 
 ## Installation
 
@@ -18,29 +23,93 @@ pip install cf-cell-methods
 
 ## Usage
 
+### Parse a cell_methods string
+
 ```
-from cf_cell_methods.lexer import lexer
-from cf_cell_methods.parser import lexer
+from cf_cell_methods import parse
 
-...
-
-rep = parser.parse(lexer.tokenize(cell_methods_string))
+representation = parse(cell_methods_string)
+# `representation` is a list of `CellMethods` objects.
 ```
 
-The usage above could be packaged up into a single method.
+### Exact matching of cell methods
 
+We can use `parse` to build a representation with which to compare for equality.
+This makes exact matching easy.
 
-## Purpose and realization
+(Yes, we could build regexes to do these matches, but this is easier,
+more readable, and more maintainable.)
+
+#### Simple case
+
+This is also embodied in the method
+`cf_cell_methods.semantics.is_streamflow_climatology`.
+
+```python
+from cf_cell_methods import parse
+
+if (
+    parse(cell_methods_string) 
+    == parse("time: mean within days time: mean over days")
+):
+    # Yes it exactly matches
+    pass
+```
+
+#### Case with variable part
+
+This is also embodied in the method
+`cf_cell_methods.semantics.is_rp5_streamflow_ensemble_percentile`.
+
+```python
+from cf_cell_methods import parse
+
+p = 5
+
+cell_methods = parse(cell_methods_string)
+if (
+    len(cell_methods) == 4
+    # Fixed part
+    and cell_methods[0:3] == 
+        parse("time: mean within days time:max over days time: mean over days")
+    # Variable part
+    and cell_methods[4] == parse(f"models: percentile[{p}]")[0]
+):
+    # Yup!
+    pass
+```
+
+For more examples, see 
+module [representation](cf_cell_methods/representation.py)
+
+### Partial matching of cell methods
+
+I am contemplating several options for enabling partial matches, including:
+
+- Partial matching by specifying a subset of object attribute values that
+  are compared for equality.
+  This is embodied at present in the `match` methods of representation classes.
+  
+- Extending the above by adding "matcher" objects that would enable the `match`
+  methods to match on various more general criteria such as "any of", 
+  or a regular expression.
+  
+- Partial matching between representation objects, specifying the attributes
+  to compare. This might make it easier to construct objects to match against,
+  but on the other hand such objects may have to include unused attributes
+  to make them legal. That is a definite downside.
+  
+Any of these should wait until there are actual use cases.
+
+## Representation
 
 The purpose of this package is to enable us to convert an arbitrary
-`cell_methods` into an easily processed, structured representation.
-(Conversely, such a representation would be easy to convert back into
-a correct `cell_methods` string.)
+`cell_methods` string into an easily processed, structured representation.
 
 What does "structured representation" mean?
 
 - It means a Python data structure, not a plain string, whose
-   structure and content is suitable for processing it programatically,
+   structure and content is suitable for processing programmatically,
    a.k.a. "easily processed."
 
 What does "easily processed" mean?
@@ -55,7 +124,7 @@ What does "easily processed" mean?
 If we consider the form of a `cell_methods` string, we see a sequence of
 individual cell methods. Each individual cell method contains some mandatory
 and some optional information. Some of these values are themselves complex.
-(For example, in our extension statistical methods to encompass percentiles,
+(For example, in our extension of statistical methods to encompass percentiles,
 we need methods with parametrizations so that we can express which percentile
 it is.)
 
@@ -126,7 +195,10 @@ Reference:
 para. 1.
 
 ```
-cell_method : NAME COLON method where_clause? over_clause? extra_info?
+cell_method : NAME COLON method clauses extra_info?
+```
+```
+clauses : where_clause? over_clause? | within_clause?
 ```
 
 #### Methods
