@@ -11,6 +11,22 @@ def eq(a, b, attrs):
     return True
 
 
+def _match(obj, what):
+    """
+    Test (bool) whether an object matches on a subset of its attributes.
+    Any attribute value itself having a "match" method is tested with that
+    method. This enables matching down a data structure hierarchy.
+    All other attribute values are tested with equality.
+    """
+    return all(
+        getattr(obj, attr).match(**value)
+        if getattr(obj, attr) is not None
+           and hasattr(getattr(obj, attr), "match")
+        else getattr(obj, attr) == value
+        for attr, value in what.items()
+    )
+
+
 def strict_join(seq, sep=" "):
     """Join a sequence of objects "strictly", which means ignoring None
     values."""
@@ -21,7 +37,7 @@ class CellMethod:
     def __init__(
         self, name, method, where=None, over=None, within=None, extra_info=None
     ):
-        if ((where is not None or over is not None) and within is not None):
+        if (where is not None or over is not None) and within is not None:
             raise ValueError(
                 "'where' and/or 'over' are mutually exclusive with 'within'"
             )
@@ -31,6 +47,9 @@ class CellMethod:
         self.over = over
         self.within = within
         self.extra_info = extra_info
+
+    def match(self,  **kwargs):
+        return _match(self, kwargs)
 
     def __eq__(*args):
         return eq(*args, "name, method, where, over, within, extra_info")
@@ -51,6 +70,9 @@ class ExtraInfo:
     def __init__(self, standardized, non_standardized):
         self.standardized = standardized
         self.non_standardized = non_standardized
+
+    def match(self,  **kwargs):
+        return _match(self, kwargs)
 
     def __eq__(*args):
         return eq(*args, "standardized, non_standardized")
@@ -77,6 +99,9 @@ class SxiInterval(StandardizedExtraInfo):
         self.value = value
         self.unit = unit
 
+    def match(self,  **kwargs):
+        return _match(self, kwargs)
+
     def __eq__(*args):
         return eq(*args, "value, unit")
 
@@ -91,6 +116,9 @@ class Method:
 
     def signature(self):
         return self.name, len(self.params)
+
+    def match(self,  **kwargs):
+        return _match(self, kwargs)
 
     def __eq__(*args):
         return eq(*args, "name, params")

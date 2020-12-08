@@ -1,6 +1,7 @@
 import pytest
 from cf_cell_methods.representation import (
     eq,
+    _match,
     CellMethod,
     ExtraInfo,
     SxiInterval,
@@ -160,3 +161,51 @@ def test__eq__(a, b, equal):
 )
 def test__str__(data, expected):
     assert str(data) == expected
+
+
+class Thang:
+    def __init__(self,a, b, c):
+        self.a = a
+        self.b = b
+        self.c = c
+
+    def match(self, **kwargs):
+        return _match(self, kwargs)
+
+
+@pytest.mark.parametrize(
+    "obj, what, expected",
+    (
+        # Atomic match values
+        (Thing(1, 2, 3), {"x": 1}, True),
+        (Thing(1, 2, 3), {"x": 99}, False),
+        (Thing(None, 2, 3), {"x": None}, True),
+        (Thing(None, 2, 3), {"x": 1}, False),
+        (Thing(1, 2, 3), {"x": 1, "y": 2}, True),
+        (Thing(1, 2, 3), {"x": 1, "y": 99}, False),
+        # Compound match values, not None
+        (
+            Thing(1, 2, Thang(5, 6, 7)),
+            {"x": 1, "y": 2, "z": {"a": 5, "b": 6}},
+            True,
+        ),
+        (
+            Thing(1, 2, Thang(8, 9, 10)),
+            {"x": 1, "y": 2, "z": {"a": 5, "b": 99}},
+            False,
+        ),
+        # Compound match values of None
+        (
+            Thing(1, 2, None),
+            {"x": 1, "y": 2, "z": {"a": 5, "b": 6}},
+            False,
+        ),
+        (
+            Thing(1, 2, None),
+            {"x": 1, "y": 2, "z": None},
+            True,
+        ),
+    )
+)
+def test__match(obj, what, expected):
+    assert _match(obj, what) is expected
