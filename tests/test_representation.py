@@ -131,7 +131,7 @@ def test__eq__(a, b, equal):
     (
         (Method("mean", None), "mean"),
         (Method("percentile", (5,)), "percentile[5]"),
-        (Method("gronk", (5,6)), "gronk[5,6]"),
+        (Method("gronk", (5, 6)), "gronk[5,6]"),
         (SxiInterval("1", "year"), "interval: 1 year"),
         (ExtraInfo(None, None), ""),
         (ExtraInfo(SxiInterval("1", "year"), None), "(interval: 1 year)"),
@@ -141,12 +141,13 @@ def test__eq__(a, b, equal):
             "(interval: 1 year comment: this is a comment)",
         ),
         (CellMethod("time", "mean"), "time: mean"),
-        (CellMethod("time", "mean", "land"), "time: mean where land"),
-        (CellMethod("time", "mean", None, "years"), "time: mean over years"),
+        (CellMethod("time", "mean", where="land"), "time: mean where land"),
+        (CellMethod("time", "mean", over="years"), "time: mean over years"),
         (
-            CellMethod("time", "mean", "land", "years"),
+            CellMethod("time", "mean", where="land", over="years"),
             "time: mean where land over years",
         ),
+        (CellMethod("time", "mean", within="days"), "time: mean within days"),
         (
             CellMethod(
                 "time",

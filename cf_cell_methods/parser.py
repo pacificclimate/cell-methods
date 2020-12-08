@@ -35,6 +35,16 @@ class CfcmParser(Parser):
             extra_info=p.opt_extra_info,
         )
 
+    @_("NAME COLON method opt_within_clause opt_extra_info")
+    def cell_method(self, p):
+        return CellMethod(
+            name=p.NAME,
+            method=p.method,
+            within=p.opt_within_clause,
+            extra_info=p.opt_extra_info,
+        )
+
+
     # Method (with optional params)
 
     @_("NAME opt_params")
@@ -81,6 +91,14 @@ class CfcmParser(Parser):
 
     @_("empty")
     def opt_over_clause(self, p):
+        return None
+
+    @_("WITHIN NAME")
+    def opt_within_clause(self, p):
+        return p.NAME
+
+    @_("empty")
+    def opt_within_clause(self, p):
         return None
 
     # Extra method information
