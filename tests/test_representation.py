@@ -2,6 +2,7 @@ import pytest
 from cf_cell_methods.representation import (
     eq,
     _match,
+    CellMethods,
     CellMethod,
     ExtraInfo,
     SxiInterval,
@@ -157,6 +158,13 @@ def test__eq__(a, b, equal):
             ),
             "time: mean (interval: 1 year comment: wow)",
         ),
+        (
+            CellMethods([
+                CellMethod("time", "mean"),
+                CellMethod("area", "standard_deviation", where="land"),
+            ]),
+            "time: mean area: standard_deviation where land"
+        )
     ),
 )
 def test__str__(data, expected):
