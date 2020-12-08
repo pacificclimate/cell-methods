@@ -42,15 +42,35 @@ def is_conventional_1(cell_method):
 
     Not much use, is this?
     """
-    return cell_method.method.name in conventional_methods
+    return (
+        cell_method.method.name in conventional_methods
+        and len(cell_method.method.params) == 0
+    )
 
 
 def is_extended_1(cell_method):
     return (
-        cell_method.method.name in conventional_methods
-        or (cell_method.method.name, len(cell_method.method.params)) in
-        extended_methods
+        is_conventional_1(cell_method)
+        or cell_method.method.signature() in extended_methods
     )
+
+
+def is_conventional_climatology(cell_methods):
+    if not all(is_conventional_1(cm) for cm in cell_methods):
+        return False
+
+    if not all(cm.name == "time" for cm in cell_methods):
+        return False
+
+    within_over = tuple((cm.within, cm.over) for cm in cell_methods)
+    if (within_over not in {
+        (("years", None), (None, "years")),
+        (("days", None), (None, "days")),
+        (("days", None), (None, "days"), (None, "years")),
+    }):
+        return False
+
+    return True
 
 
 def is_conventional(cell_methods):
@@ -60,22 +80,15 @@ def is_conventional(cell_methods):
             return False
 
     # Check climatological cases
-    # - name = time for all
-    # - one of (within years, over years), (within days, over days),
-    #   (within days, over days, over years)
-    if all(cm.name == "time" for cm in cell_methods):
-        sig = tuple((cm.within, cm.over) for cm in cell_methods)
-        if (sig in {
-            (("years", None), (None, "years")),
-            (("days", None), (None, "days")),
-            (("days", None), (None, "days"), (None, "years")),
-        }):
-            return True
-
-    # Check non-climatological cases
-    # - over if present always preceded by where
-    if all(cm.over is None or cm.where is not None for cm in cell_methods):
+    if is_conventional_climatology(cell_methods):
         return True
 
-    # Nope
-    return False
+    # Check non-climatological cases
+    # - over clause if present always accompanied by where clause
+    # - no within clause
+    if not all(cm.over is None or cm.where is not None for cm in cell_methods):
+        return False
+    if not all(cm.within is None for cm in cell_methods):
+        return False
+
+    return True
