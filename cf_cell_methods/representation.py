@@ -33,6 +33,14 @@ def strict_join(seq, sep=" "):
     return sep.join(s for s in seq if s is not None)
 
 
+class CellMethods(list):
+    def __str__(self):
+        return " ".join(str(x) for x in self)
+
+    def match(self,  *args):
+        return all(cm.match(arg) for cm, arg in zip(self, args))
+
+
 class CellMethod:
     def __init__(
         self, name, method, where=None, over=None, within=None, extra_info=None

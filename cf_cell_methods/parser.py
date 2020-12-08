@@ -2,7 +2,7 @@ import re
 from sly import Parser
 from cf_cell_methods.lexer import CfcmLexer
 from cf_cell_methods.representation import (
-    CellMethod, Method, ExtraInfo, SxiInterval,
+    CellMethods, CellMethod, Method, ExtraInfo, SxiInterval,
 )
 
 
@@ -17,11 +17,11 @@ class CfcmParser(Parser):
 
     @_("cell_methods cell_method")
     def cell_methods(self, p):
-        return p.cell_methods + [p.cell_method]
+        return p.cell_methods + CellMethods([p.cell_method])
 
     @_("cell_method")
     def cell_methods(self, p):
-        return [p.cell_method]
+        return CellMethods([p.cell_method])
 
     # Cell method
 
