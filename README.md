@@ -80,7 +80,7 @@ if (
 ```
 
 For more examples, see 
-module [representation](cf_cell_methods/representation.py)
+module [semantics](cf_cell_methods/semantics.py).
 
 ### Partial matching of cell methods
 
@@ -132,6 +132,61 @@ This suggests a relatively simple representation: A sequence (list or tuple)
 of `CellMethod` objects, with appropriate subsidiary objects as needed to 
 represent those of its attributes with compound values (e.g., `Method`.) See
 module [representation](cf_cell_methods/representation.py).
+
+## Semantics
+
+The parser checks for syntactic correctness, but does not address meaning.
+Semantics addresses meaning. The parsing of a cell methods string into a 
+representation makes semantics much easier.
+
+In our current use cases, "semantics" means two things:
+- Does a given cell methods string match a pattern we are looking for?
+- Is a given cell methods string semantically valid? 
+
+### Matching patterns
+
+See [Usage](#usage) above and the [semantics](cf_cell_methods/semantics.py) 
+module for some examples of how to use this package to 
+match a cell methods string to a given pattern.
+
+There is much more here that can be done, but awaits some use cases to drive
+it.
+
+### Semantic validity
+
+Just as one can construct
+grammatically correct but nonsensical sentences in English 
+(or buggy code in Python), it is possible to construct cell methods strings
+that are (according to our somewhat forgiving parser) syntactically valid
+but illegal according to the semantic constraints stated in the 
+CF Conventions.
+
+#### Semantics: Climatological statistics cell methods
+
+Reference: 
+[7.4. Climatological Statistics](http://cfconventions.org/Data/cf-conventions/cf-conventions-1.8/cf-conventions.html#climatological-statistics)
+
+Strictly speaking, cell methods for climatological statistics are syntactically
+distinguishable from other ("simple") cell methods. The distinction lies in 
+the use of the `over` keyword. In simple cell methods, an `over` subexpression
+must be preceded by a `where` subexpression. In climatological cell methods,
+only the `over` subexpression can appear. 
+Furthermore, the acceptable values in the `over` subexpression are in distinct
+classes for each (much limited in the climatological case). 
+However, I think that one could construct a case where a simple cell method 
+`over` values looked like climatological cell method `over` values, 
+specifically by using the terms `years` and `days` very idiosyncratically.
+It may be possible however that there are in fact two separate vocabularies
+for each case (simple: spatial; climatological: temporal).
+
+*However*, as the above discussion shows, this syntactic distinction is quite
+subtle. In this grammar we elide the syntactic distinction, using a considerably
+simpler grammar, and instead treat the distinction as a semantic one. 
+The semantic distinction, in the simpler grammar, is on the presence of 
+a `where` subexpression and the value in the `over` subexpression.
+
+This semantic distinction is far easier to implement and gives us just the right 
+amount of flexibility for considered extensions to the CF Conventions.
 
 ## Implementation planning
 
@@ -227,7 +282,7 @@ param_list: param_list COMMA param | param
 param : NUM
 ```
 
-#### Statistics applying to portions of cells (`where`, `over`)
+#### Statistics applying to portions of cells (`where`, `over` clauses)
 
 Reference:
 [7.3.3. Statistics applying to portions of cells](http://cfconventions.org/Data/cf-conventions/cf-conventions-1.8/cf-conventions.html#statistics-applying-portions).
@@ -241,6 +296,15 @@ where_clause : WHERE NAME
 ```
 ```
 over_clause : OVER NAME
+```
+
+#### Climatological statistics (`within` clause)
+
+Reference:
+[Climatological statistics cell methods](#climatological-statistics-cell-methods).
+
+```
+within_clause : OVER NAME
 ```
 
 #### Extra method information
@@ -257,41 +321,6 @@ The content of the `EXTRA_INFO` token is parsed separately inside the
 extra information in the Conventions appears to make it not quite strictly
 a CFG.
 
-
-#### Helper symbols
-
-```
-empty :
-```
-
-## Semantics
-
-### Climatological statistics cell methods
-
-Reference: 
-[7.4. Climatological Statistics](http://cfconventions.org/Data/cf-conventions/cf-conventions-1.8/cf-conventions.html#climatological-statistics)
-
-Strictly speaking, cell methods for climatological statistics are syntactically
-distinguishable from other ("simple") cell methods. The distinction lies in 
-the use of the `over` keyword. In simple cell methods, an `over` subexpression
-must be preceded by a `where` subexpression. In climatological cell methods,
-only the `over` subexpression can appear. 
-Furthermore, the acceptable values in the `over` subexpression are in distinct
-classes for each (much limited in the climatological case). 
-However, I think that one could construct a case where a simple cell method 
-`over` values looked like climatological cell method `over` values, 
-specifically by using the terms `years` and `days` very idiosyncratically.
-It may be possible however that there are in fact two separate vocabularies
-for each case (simple: spatial; climatological: temporal).
-
-*However*, as the above discussion shows, this syntactic distinction is quite
-subtle. In this grammar we elide the syntactic distinction, using a considerably
-simpler grammar, and instead treat the distinction as a semantic one. 
-The semantic distinction, in the simpler grammar, is on the presence of 
-a `where` subexpression and the value in the `over` subexpression.
-
-This semantic distinctin is far easier to implement and gives us just the right 
-amount of flexibility for considered extensions to the CF Conventions.
 
 ### Extensions
 
