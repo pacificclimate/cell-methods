@@ -1,9 +1,7 @@
 """
-Semantic checks on cell methods (which are necessarily syntactically valid if
-they can be represented `CellMethod`.
+Semantic checks on cell methods.
 """
 from cf_cell_methods import parse
-from cf_cell_methods.representation import CellMethod
 
 
 def parse_if_str(cell_methods):
@@ -30,7 +28,7 @@ is_rp5_streamflow_climatology_single_model = make_equality_comparator(
 )
 is_rp5_streamflow_climatology_ensemble_mean = make_equality_comparator(
     "time: mean within days time: max over days time: mean over days "
-    "models: mean over ensemble"
+    "models: mean"
 )
 
 
