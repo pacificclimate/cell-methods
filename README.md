@@ -301,3 +301,18 @@ We extend the CF Conventions by allowing an optional statistic-over-models
 method as well at the end of climatological statistics.
 Again, this is a semantic not a syntactic constraint.
 
+## Releasing
+
+To create a versioned release:
+
+1. Increment `version` in `setup.py`.
+1. Summarize the changes from the last version in `NEWS.md`
+1. Commit these changes, then tag the release.
+1. Push to the repo.
+
+  ```bash
+git add setup.py NEWS.md
+git commit -m"Bump to version x.x.x"
+git tag -a -m"x.x.x" x.x.x
+git push --follow-tags
+  ```
