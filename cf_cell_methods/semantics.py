@@ -2,6 +2,49 @@
 Semantic checks on cell methods (which are necessarily syntactically valid if
 they can be represented `CellMethod`.
 """
+from cf_cell_methods import parse
+from cf_cell_methods.representation import CellMethod
+
+
+def parse_if_str(cell_methods):
+    return parse(cell_methods) if isinstance(cell_methods, str) \
+        else cell_methods
+
+
+def make_equality_comparator(comparison):
+    comparison = parse_if_str(comparison)
+    return lambda cell_methods: parse_if_str(cell_methods) == comparison
+
+
+# Hydrology cell method comparators
+
+is_streamflow_raw = make_equality_comparator("time: mean within days")
+is_streamflow_climatology = make_equality_comparator(
+    "time: mean within days time: mean over days"
+)
+is_rp5_streamflow_single_model = make_equality_comparator(
+    "time: mean within days time: mean over days"
+)
+is_rp5_streamflow_climatology_single_model = make_equality_comparator(
+    "time: mean within days time: max over days time:mean over days"
+)
+is_rp5_streamflow_climatology_ensemble_mean = make_equality_comparator(
+    "time: mean within days time: max over days time: mean over days "
+    "models: mean over ensemble"
+)
+
+
+def is_rp5_streamflow_ensemble_percentile(p, cell_methods):
+    cell_methods = parse_if_str(cell_methods)
+    return (
+        len(cell_methods) == 4
+        and is_rp5_streamflow_climatology_single_model(cell_methods[0:3])
+        and cell_methods[4] == parse(f"models: percentile[{p}]")[0]
+    )
+
+
+# These comparators may or may not be useful to us and/or may be better
+# reformulated with `match`. Kind of on hold here.
 
 conventional_methods = {
     "num",
