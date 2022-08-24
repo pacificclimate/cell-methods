@@ -69,9 +69,16 @@ from cf_cell_methods.representation import (
                 CellMethod("lat", Method("standard_deviation", None)),
             ]
         ),
+        (
+            'time: minimum within years time: mean over years',
+            [
+                CellMethod("time", Method("minimum", None), within="years"),
+                CellMethod("time", Method("mean", None), over="years"),
+            ]
+        )
     )
 )
-def test_parserx(data, expected):
+def test_parser(data, expected):
     result = parse(data)
     # for r, e in zip(result, expected):
     #     print(f"{r} | {e}")
@@ -84,6 +91,7 @@ def test_parserx(data, expected):
         ("explode my head", None),
         (":explode my head", None),
         ("explode: my head", None),
+        ("time: minimum where foo within days", None),
     )
 )
 def test_syntax_error(data, expected):
