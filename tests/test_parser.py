@@ -1,6 +1,5 @@
 import pytest
-from cf_cell_methods.lexer import lexer
-from cf_cell_methods.parser import parser
+from cf_cell_methods import parse
 from cf_cell_methods.representation import (
     CellMethod, Method, ExtraInfo, SxiInterval,
 )
@@ -72,8 +71,22 @@ from cf_cell_methods.representation import (
         ),
     )
 )
-def test_parser(data, expected):
-    result = parser.parse(lexer.tokenize(data))
+def test_parserx(data, expected):
+    result = parse(data)
     # for r, e in zip(result, expected):
     #     print(f"{r} | {e}")
     assert result == expected
+
+
+@pytest.mark.parametrize(
+    "data, expected",
+    (
+        ("explode my head", None),
+        (":explode my head", None),
+        ("explode: my head", None),
+    )
+)
+def test_syntax_error(data, expected):
+    cell_methods = parse(data)
+    print(cell_methods)
+    assert cell_methods == expected
