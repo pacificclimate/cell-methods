@@ -1,6 +1,5 @@
 import pytest
-from cf_cell_methods.lexer import lexer
-from cf_cell_methods.parser import parser
+from cf_cell_methods import parse
 from cf_cell_methods.representation import (
     CellMethod, Method, ExtraInfo, SxiInterval,
 )
@@ -70,10 +69,32 @@ from cf_cell_methods.representation import (
                 CellMethod("lat", Method("standard_deviation", None)),
             ]
         ),
+        (
+            'time: minimum within years time: mean over years',
+            [
+                CellMethod("time", Method("minimum", None), within="years"),
+                CellMethod("time", Method("mean", None), over="years"),
+            ]
+        )
     )
 )
 def test_parser(data, expected):
-    result = parser.parse(lexer.tokenize(data))
+    result = parse(data)
     # for r, e in zip(result, expected):
     #     print(f"{r} | {e}")
     assert result == expected
+
+
+@pytest.mark.parametrize(
+    "data, expected",
+    (
+        ("explode my head", None),
+        (":explode my head", None),
+        ("explode: my head", None),
+        ("time: minimum where foo within days", None),
+    )
+)
+def test_syntax_error(data, expected):
+    cell_methods = parse(data)
+    print(cell_methods)
+    assert cell_methods == expected
