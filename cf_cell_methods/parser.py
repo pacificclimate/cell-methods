@@ -5,10 +5,19 @@ from cf_cell_methods.representation import (
     CellMethods, CellMethod, Method, ExtraInfo, SxiInterval,
 )
 
+import logging
+
+# Configure logging
+logging.basicConfig(level=logging.INFO, format='%(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
 
 class CfcmParser(Parser):
     # Get the token list from the lexer (required)
     tokens = CfcmLexer.tokens
+
+    def __init__(self):
+        super().__init__()
+        self.cell_method_history = []  
 
     # Grammar rules and actions
     start = 'cell_methods'
@@ -17,11 +26,15 @@ class CfcmParser(Parser):
 
     @_("cell_methods cell_method")
     def cell_methods(self, p):
-        return p.cell_methods + CellMethods([p.cell_method])
+        cell_methods_instance = p.cell_methods + CellMethods([p.cell_method])
+        self.cell_method_history.append(p.cell_method)  
+        return cell_methods_instance
 
     @_("cell_method")
     def cell_methods(self, p):
-        return CellMethods([p.cell_method])
+        cell_methods_instance = CellMethods([p.cell_method])
+        self.cell_method_history.append(p.cell_method) 
+        return cell_methods_instance
 
     # Cell method
 
@@ -137,6 +150,20 @@ class CfcmParser(Parser):
     @_("")
     def empty(self, p):
         pass
+    
+    def error(self, token):
+        # Log the last 3 cell methods
+        if self.cell_method_history:
+            last_methods_context = ' | '.join([str(method) for method in self.cell_method_history[-3:]])
+            context = f"Context: {last_methods_context}"
+        else:
+            context = "Error occurred at the beginning before parsing any cell methods."
+
+        if token:
+            logger.error(f"{context} Unexpected Token:'{token}'.")
+        else:
+            logger.error(f"{context} Syntax error at EOF.")
+
 
 
 parser = CfcmParser()
